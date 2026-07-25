@@ -130,7 +130,7 @@ opt1, opt2 = Adam(lr=0.05), Adam(lr=0.05)
 
 modelo = Sequential([capa1, capa2])
 modelo.compile(optimizers=[opt1, opt2])
-modelo.fit(X_train, Y_train, epochs=2000, verbose=False)
+modelo.fit(X_train, Y_train, epochs=2000, verbose=True)
 
 # ======================================================
 # 3) Probar con un color nuevo y mostrarlo
