@@ -117,7 +117,7 @@ def home():
     color_test = np.array([[225, 0, 0]], dtype=float)
     prob = float(modelo.predict(color_test)[0])
     return jsonify({
-        "status": "¡IA funcionando en Render",
+        "status": "¡IA funcionando en RENDER",
         "color_probado": [225, 0, 0],
         "probabilidad_de_ser_rojo": prob
     })
