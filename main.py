@@ -1,5 +1,10 @@
 import numpy as np
+import matplotlib
+matplotlib.use('Agg') # Necesario para que matplotlib funcione en la nube sin pantalla
 import matplotlib.pyplot as plt
+from flask import Flask, jsonify
+
+app = Flask(__name__)
 
 # --- Activación Sigmoide ---
 class Sigmoid:
@@ -80,9 +85,6 @@ class Sequential:
             for layer, opt in zip(reversed(self.layers), reversed(self.opts)):
                 dW, db, dA = layer.backward(dA)
                 layer.W, layer.b = opt.update(layer.W, layer.b, dW, db)
-            if verbose and ep % 200 == 0:
-                loss = np.mean(error ** 2)
-                print(f"Epoch {ep}: loss = {loss:.6f}")
 
     def predict(self, X_new):
         X_norm = X_new / self._scale
@@ -91,39 +93,17 @@ class Sequential:
             A = layer.forward(A)
         return A.flatten()
 
-# ======================================================
-# 1) Datos de entrenamiento: Rojo (1) vs No rojo (0)
-# ======================================================
+# --- Entrenar el modelo al arrancar el servidor ---
 X_train = np.array([
-    [255, 0, 0],    # rojo puro
-    [250, 0, 0],
-    [240, 0, 0],
-    [230, 0, 0],
-    [220, 0, 0],
-    [210, 0, 0],
-    [200, 0, 0],
-    [180, 0, 0],
-    [175, 0, 0],
-
-    [0, 0, 255],    # azul
-    [0, 255, 0],    # verde
-    [120, 120, 120],# gris
-    [255, 255, 255],# blanco
-    [0, 0, 0],      # negro
-    [255, 255, 0],  # amarillo
-    [128, 0, 128], #morado
-    [255, 165, 0], #naranja
-    [0, 255, 255], #cian
-    (255, 0, 255), # magenta
-    (150, 75, 0), #cafe
-    (255, 192, 203), #rosado
+    [255, 0, 0], [250, 0, 0], [240, 0, 0], [230, 0, 0], [220, 0, 0],
+    [210, 0, 0], [200, 0, 0], [180, 0, 0], [175, 0, 0],
+    [0, 0, 255], [0, 255, 0], [120, 120, 120], [255, 255, 255],
+    [0, 0, 0], [255, 255, 0], [128, 0, 128], [255, 165, 0],
+    [0, 255, 255], [255, 0, 255], [150, 75, 0], [255, 192, 203]
 ], dtype=float)
 
 Y_train = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=float)
 
-# ======================================================
-# 2) Construcción del modelo
-# ======================================================
 capa1 = Dense(units=4, input_shape=[3], activation=Sigmoid)
 capa2 = Dense(units=1, input_shape=[4], activation=Sigmoid)
 opt1, opt2 = Adam(lr=0.05), Adam(lr=0.05)
@@ -132,17 +112,15 @@ modelo = Sequential([capa1, capa2])
 modelo.compile(optimizers=[opt1, opt2])
 modelo.fit(X_train, Y_train, epochs=2000, verbose=False)
 
-# ======================================================
-# 3) Probar con un color nuevo y mostrarlo
-# ======================================================
-color_test = np.array([[225, 0, 0]], dtype=float)
-prob = modelo.predict(color_test)[0]
+@app.route('/')
+def home():
+    color_test = np.array([[225, 0, 0]], dtype=float)
+    prob = float(modelo.predict(color_test)[0])
+    return jsonify({
+        "status": "¡IA funcionando en Render",
+        "color_probado": [225, 0, 0],
+        "probabilidad_de_ser_rojo": prob
+    })
 
-print(f"Probabilidad de ser ROJO: {prob}")
-
-# Mostrar visualmente
-plt.figure(figsize=(2,2))
-plt.imshow([[color_test[0]/255.0]])
-plt.axis("off")
-plt.title(f"Prob. rojo: {prob}")
-plt.show()
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=10000)
